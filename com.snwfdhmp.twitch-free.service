@@ -1,0 +1,12 @@
+[Unit]
+Description=com.snwfdhmp.twitch-free
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/github.com/snwfdhmp/twitch-free
+ExecStart=/usr/local/bin/node main.v2.js
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

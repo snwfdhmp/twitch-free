@@ -1,0 +1,14 @@
+{
+  "name": "twitch-free",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "module",
+  "prettier": {
+    "semi": false
+  },
+  "dependencies": {
+    "dockerode": "^4.0.2",
+    "express": "^4.21.1"
+  }
+}
