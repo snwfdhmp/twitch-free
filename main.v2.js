@@ -55,8 +55,8 @@ const getUrl = (inputUrl) => {
 
     // Crée le conteneur avec l'image souhaitée
     const container = await docker.createContainer({
-      Image: "twitch-vod-recovery-v2", // Remplace par l'image souhaitée
-      Cmd: ["python", "vod_recovery.v2.py"], // Par exemple : attend des données et les retourne
+      Image: "twitch-vod-recovery-v3", // Remplace par l'image souhaitée
+      Cmd: ["python", "vod_recovery.py", inputUrl], // Par exemple : attend des données et les retourne
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
@@ -81,29 +81,34 @@ const getUrl = (inputUrl) => {
 
     // Envoie les données à `stdin`
 
-    const inputData = ["3", "3", inputUrl]
+    const inputData = []
     let inputIndex = 0
 
     // Ecoute les données de `stdout`
     stream.on("data", async (data) => {
       // log("Output:", data.toString())
-      if (inputIndex === inputData.length) {
-        const REGEX_URL =
-          /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/
-        // extract url
-        const url = data.toString().match(REGEX_URL)
-        log(url[0])
-        resolve(url[0])
-        pushCache(inputUrl, {
-          url: url[0],
-          expiresAt: Date.now() + 1000 * 60 * 60 * 48,
-        })
-        await container.stop()
-        await container.remove()
-        log("Container stopped and removed")
+      if (inputIndex !== inputData.length) {
+        stream.write(inputData[inputIndex] + "\n")
+        inputIndex++
+        return
       }
-      stream.write(inputData[inputIndex] + "\n")
-      inputIndex++
+
+      const REGEX_URL =
+        /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/
+      // extract url
+      log("------ DATA START ------")
+      log(data.toString())
+      log("------ DATA END ------")
+      const url = data.toString().match(REGEX_URL)
+      log(url[0])
+      resolve(url[0])
+      pushCache(inputUrl, {
+        url: url[0],
+        expiresAt: Date.now() + 1000 * 60 * 60 * 48,
+      })
+      await container.stop()
+      await container.remove()
+      log("Container stopped and removed")
     })
 
     // Ecoute les données de `stderr`
@@ -113,6 +118,10 @@ const getUrl = (inputUrl) => {
   })
 }
 
+app.get("/", (req, res) => {
+  // serve public.html
+  res.sendFile(__dirname + "public.html")
+})
 app.get("/videos/:id", async (req, res) => {
   const ip =
     req.headers["x-forwarded-for"] ||
@@ -125,8 +134,16 @@ app.get("/videos/:id", async (req, res) => {
   const id = req.params.id
   const url = `https://twitch.tv/videos/${id}`
 
+  // detect if ?vlc=1
+  const isVlc = req.query.vlc === "true" || req.query.vlc === "1"
+
   try {
     const videoUrl = await getUrl(url)
+    // redirect
+    if (isVlc) {
+      res.redirect(`vlc-x-callback://x-callback-url/stream?url=${videoUrl}`)
+      return
+    }
     // redirect
     res.redirect(videoUrl)
   } catch (e) {

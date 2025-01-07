@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Twitch VOD Player</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+  </head>
+  <body>
+    <video
+      id="my-video"
+      class="video-js"
+      controls
+      preload="auto"
+      width="1280"
+      height="720"
+      data-setup="{}"
+    >
+      <source
+        src="https://dgeft87wbj63p.cloudfront.net/ef599f3aeb46095bda1b_xari_43517946200_1736112807/chunked/index-dvr.m3u8"
+        type="application/x-mpegURL"
+      />
+    </video>
+
+    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+  </body>
+</html>

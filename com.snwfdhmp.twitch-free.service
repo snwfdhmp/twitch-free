@@ -4,9 +4,10 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/github.com/snwfdhmp/twitch-free
-ExecStart=/usr/local/bin/node main.v2.js
+ExecStart=/usr/local/bin/node main.js
 Restart=on-failure
 RestartSec=10
+SyslogIdentifier=com.snwfdhmp.twitch-free
 
 [Install]
 WantedBy=multi-user.target
