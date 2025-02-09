@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Twitch VOD Player</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+        }
+        .vjs-control-bar, .vjs-menu-content, .vjs-volume-control {
+            background-color: rgba(0, 0, 0, 0.2) !important;
+        }
+        #video-container {
+            height: 100% !important;
+            width: 70% !important;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="video-container">
+    <video id="my-video" class="video-js vjs-big-play-centered vjs-16-9" style="outline:none;"></video>
+    </div>
+    <script src="https://vjs.zencdn.net/8.16.1/video.min.js"></script>
+    <script>
+        var overrideNative = false;
+        
+        var player = videojs('my-video', {
+            // fluid: true,
+            fill: true,
+            controls: true,
+            preload: 'auto',
+            enableSmoothSeeking: true,
+            enableDocumentPictureInPicture: true,
+            inactivityTimeout: 500,
+            controlBar: {
+                volumePanel: {
+                    inline: false
+                }
+            },
+            userActions: {
+                hotkeys: true
+            },
+            playbackRates: [0.5, 1, 1.2, 1.8, 2, 5],
+            sources: [{
+                src: '__M3U8URLREPLACE__',
+                type: 'application/x-mpegURL'
+            }],
+            html5: {
+                hls: {
+                    overrideNative: overrideNative
+                },
+                nativeVideoTracks: !overrideNative,
+                nativeAudioTracks: !overrideNative,
+                nativeTextTracks: !overrideNative
+            }
+        }, function onPlayerReady() {
+        });
+    </script>
+</body>
+
+</html>

@@ -12,13 +12,13 @@ const log = (data) => {
   console.log(`${new Date().toISOString()} ${data.toString()}`)
 }
 
-const CACHE_PATH = __dirname + "cache.json"
-let cache = {}
+// const CACHE_PATH = __dirname + "cache.json"
+// let cache = {}
 
-const pushCache = (key, value) => {
-  cache[key] = value
-  writeCacheToDisk()
-}
+// const pushCache = (key, value) => {
+//   cache[key] = value
+//   writeCacheToDisk()
+// }
 
 const debounce = (func, delay) => {
   let timer
@@ -28,31 +28,31 @@ const debounce = (func, delay) => {
   }
 }
 
-const writeCacheToDisk = debounce(async () => {
-  // write cache to disk
-  return await fs.promises.writeFile(CACHE_PATH, JSON.stringify(cache))
-}, 4000)
+// const writeCacheToDisk = debounce(async () => {
+//   // write cache to disk
+//   return await fs.promises.writeFile(CACHE_PATH, JSON.stringify(cache, null, 2))
+// }, 4000)
 
-const loadCacheFromDisk = async () => {
-  try {
-    const data = await fs.promises.readFile(CACHE_PATH)
-    cache = JSON.parse(data)
-  } catch (e) {
-    console.error(e)
-  }
-}
+// const loadCacheFromDisk = async () => {
+//   try {
+//     const data = await fs.promises.readFile(CACHE_PATH)
+//     cache = JSON.parse(data)
+//   } catch (e) {
+//     console.error(e)
+//   }
+// }
 
 const getUrl = (id) => {
   return new Promise(async (resolve, reject) => {
-    if (cache[id]) {
-      if (cache[id].expiresAt < Date.now()) {
-        delete cache[id]
-      } else {
-        log(`served from cache: ${cache[id]}`)
-        resolve(cache[id])
-        return
-      }
-    }
+    // if (cache[id]) {
+    //   if (cache[id].expiresAt < Date.now()) {
+    //     delete cache[id]
+    //   } else {
+    //     log(`served from cache: ${cache[id]}`)
+    //     resolve(cache[id].url)
+    //     return
+    //   }
+    // }
 
     const { data } = await axios.post(
       "https://gql.twitch.tv/gql",
@@ -79,6 +79,9 @@ const getUrl = (id) => {
     const url = `https://${domain}/${vodSpecialId}/chunked/index-dvr.m3u8`
     console.log(`Found: ${url}`)
     resolve(url)
+
+    // cache[id] = m3u8Url
+    // writeCacheToDisk()
   })
 }
 
@@ -86,6 +89,7 @@ app.get("/", (req, res) => {
   // serve public.html
   res.sendFile(__dirname + "public.html")
 })
+
 app.get("/videos/:id", async (req, res) => {
   const ip =
     req.headers["x-forwarded-for"] ||
@@ -103,7 +107,6 @@ app.get("/videos/:id", async (req, res) => {
     res.status(500).send(e)
     return
   }
-  cache[id] = m3u8Url
 
   const data = await axios.get(m3u8Url)
 
@@ -112,14 +115,32 @@ app.get("/videos/:id", async (req, res) => {
     return
   }
 
-  res.redirect(m3u8Url)
+  const m3u8proxyUrl = `https://m3u8.snwfdhmp.com/m3u8-proxy?url=${encodeURIComponent(
+    m3u8Url
+  )}`
+
+  console.log(`Redirecting to ${m3u8proxyUrl}`)
+
+  // serve public.template.html but replace __M3U8URLREPLACE__ with m3u8Url
+  res.header("Access-Control-Allow-Origin", "*")
+  res.header("Access-Control-Allow-Methods", "*")
+  res.header("Access-Control-Allow-Headers", "*")
+  res.send(
+    fs
+      .readFileSync(__dirname + "public.template.html", "utf8")
+      .replaceAll("__M3U8URLREPLACE__", m3u8proxyUrl)
+  )
+
+  return
+
+  // res.redirect(m3u8Url) // FORMER CODE TO REDIRECT TO M3U8
 })
 
-app.get("/m3u8/:id", (req, res) => {
-  res.json(cache)
-})
+// app.get("/m3u8/:id", (req, res) => {
+// res.json(cache)
+// })
 
-await loadCacheFromDisk()
+// await loadCacheFromDisk()
 
 const SERVER_PORT = 7359
 app.listen(SERVER_PORT, () => {
